@@ -35,21 +35,17 @@ fn part_b(input: &str) -> u32 {
         .lines()
         .map(|line| {
             //Create a blank string
-            let mut current_slice = String::from("");
             let mut result = 0;
 
-            for c in line.chars() {
+            for (i, c) in line.chars().enumerate() {
                 // If its a digit, break early.
                 if c.is_numeric() {
                     result += c.to_digit(10).unwrap();
                     break;
                 }
 
-                //Push the current character into the working slice
-                current_slice.push(c);
-
                 //Match the current slice to find the first number written as a word
-                let val: Option<u32> = match current_slice {
+                let val: Option<u32> = match line[..i + 1] {
                     ref x if x.contains("one") => Some(1),
                     ref x if x.contains("two") => Some(2),
                     ref x if x.contains("three") => Some(3),
@@ -69,11 +65,8 @@ fn part_b(input: &str) -> u32 {
                 }
             }
 
-            // Reset the slice
-            let mut current_slice = String::from("");
-
             // Loop through in reverse
-            for c in line.chars().rev() {
+            for (i, c) in line.chars().rev().enumerate() {
                 // If its a digit, break early.
                 if c.is_numeric() {
                     result *= 10;
@@ -81,20 +74,17 @@ fn part_b(input: &str) -> u32 {
                     break;
                 }
 
-                //Push the current character into the working slice
-                current_slice.push(c);
-
                 // Match the string in reverse
-                let val: Option<u32> = match current_slice {
-                    ref x if x.contains("eno") => Some(1),
-                    ref x if x.contains("owt") => Some(2),
-                    ref x if x.contains("eerht") => Some(3),
-                    ref x if x.contains("ruof") => Some(4),
-                    ref x if x.contains("evif") => Some(5),
-                    ref x if x.contains("xis") => Some(6),
-                    ref x if x.contains("neves") => Some(7),
-                    ref x if x.contains("thgie") => Some(8),
-                    ref x if x.contains("enin") => Some(9),
+                let val: Option<u32> = match line[line.len() - i - 1..] {
+                    ref x if x.contains("one") => Some(1),
+                    ref x if x.contains("two") => Some(2),
+                    ref x if x.contains("three") => Some(3),
+                    ref x if x.contains("four") => Some(4),
+                    ref x if x.contains("five") => Some(5),
+                    ref x if x.contains("six") => Some(6),
+                    ref x if x.contains("seven") => Some(7),
+                    ref x if x.contains("eight") => Some(8),
+                    ref x if x.contains("nine") => Some(9),
                     _ => None,
                 };
 
