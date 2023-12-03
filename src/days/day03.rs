@@ -1,7 +1,7 @@
 use crate::{Solution, SolutionPair};
 use grid::Grid;
 use itertools::Itertools;
-use regex::Regex;
+use regex::{Match, Regex};
 
 #[derive(Clone, PartialEq)]
 
@@ -38,6 +38,14 @@ fn parse_part(location: (usize, usize), part_type: &char) -> Option<Part> {
         }),
     }
 }
+
+// TODO: Find a way to only regex parse each line once and use that as a refrence for the analysis of parts
+
+// fn regex_parse_row(row: String) -> Vec<Match<'static>> {
+//     // match on numbers
+//     let re = Regex::new(r"\d+").unwrap();
+//     re.find_iter(&row).collect_vec()
+// }
 
 fn find_adjacent_points(point: &Point) -> Vec<Point> {
     // For the part, calculate all it's adjacent coordinates
@@ -85,6 +93,11 @@ fn discover_numbers(part: &Part, grid: &Grid<char>) -> Vec<u32> {
 }
 
 fn get_parts_list(grid: Grid<char>) -> Vec<(Part, Vec<u32>)> {
+    // let regex_vec = grid
+    //     .iter_rows()
+    //     .map(|row| regex_parse_row(row.collect::<String>()))
+    //     .collect_vec();
+
     grid.indexed_iter()
         .filter_map(|(location, part_type)| parse_part(location, part_type))
         .map(|part| {
