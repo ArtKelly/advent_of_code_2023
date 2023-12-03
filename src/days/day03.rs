@@ -3,119 +3,131 @@ use grid::Grid;
 use itertools::Itertools;
 use regex::Regex;
 
-fn part_a(input: &str) -> u32 {
+#[derive(Clone, PartialEq)]
+
+struct Point {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Clone)]
+struct Part {
+    location: Point,
+    part_type: char,
+}
+
+fn create_grid(input: &str) -> Grid<char> {
     // Create a grid and fill it with our input
     let mut grid: Grid<char> = Grid::new(0, 0);
     for l in input.lines() {
         grid.push_row(l.chars().collect_vec());
     }
+    grid
+}
+
+fn parse_part(location: (usize, usize), part_type: &char) -> Option<Part> {
+    match part_type {
+        // Filter out any dots or numbers, keeping all the parts
+        '0'..='9' | '.' => None,
+        _ => Some(Part {
+            part_type: *part_type,
+            location: Point {
+                x: location.0,
+                y: location.1,
+            },
+        }),
+    }
+}
+
+fn find_adjacent_points(point: &Point) -> Vec<Point> {
+    // For the part, calculate all it's adjacent coordinates
+    let mut adjacent_points: Vec<Point> = vec![];
+
+    // Loop around the point generating a vec
+    // There are no parts on the edge of the schematic so we do not worry about over/underflowing
+    for x in (point.x - 1)..=point.x + 1 {
+        for y in (point.y - 1)..=(point.y + 1) {
+            adjacent_points.push(Point { x, y });
+        }
+    }
+
+    adjacent_points
+}
+
+fn discover_numbers(part: &Part, grid: &Grid<char>) -> Vec<u32> {
+    // For the part, calculate all it's adjacent coordinates
+    let adjacent_points = find_adjacent_points(&part.location);
 
     // Regex matcher for numbers
     let re = Regex::new(r"\d+").unwrap();
+    let mut matches: Vec<u32> = vec![];
 
-    grid.iter_rows()
-        .enumerate()
-        // For each row, find the numbers.
-        .map(|(row, row_chars)| {
-            re.find_iter(&row_chars.collect::<String>())
-                // Of the numbers, create a vec of adjacent points
-                .filter_map(|m| {
-                    let x_range = m.start().saturating_sub(1)..m.end().saturating_add(1);
-                    let y_range = row.saturating_sub(1)..=row.saturating_add(1);
-                    let mut adjacent_points: Vec<(usize, usize)> = vec![];
+    for x in (part.location.x - 1)..=part.location.x + 1 {
+        // build string from the grid
+        let row = grid.iter_row(x).collect::<String>();
 
-                    for col in x_range {
-                        for row in y_range.clone() {
-                            adjacent_points.push((row, col));
-                        }
-                    }
+        // Iterate through the matches and attach them to the part
+        for m in re.find_iter(&row) {
+            let match_range = m.start()..m.end();
 
-                    let mut is_part = false;
+            for y in match_range {
+                if adjacent_points.contains(&Point { x, y }) {
+                    //Parse the match and push the result into the part
+                    matches.push(m.as_str().parse::<u32>().unwrap());
+                    // Move onto the next regex match if a gear is touching
+                    break;
+                }
+            }
+        }
+    }
 
-                    // For each adjacent point, check if it is a part. If so, break the loop
-                    for next in adjacent_points {
-                        match grid.get(next.0, next.1) {
-                            // Ignore non parts
-                            Some('0'..='9' | '.') => (),
-                            None => (),
-                            _ => {
-                                is_part = true;
-                                break;
-                            }
-                        };
-                    }
+    matches
+}
 
-                    // Match on the resulting check, parse the number and remove non-parts from the iterator
-                    match is_part {
-                        true => Some(m.as_str().parse::<u32>().unwrap()),
-                        false => None,
-                    }
-                })
-                // Sum up all the parts for that row
-                .sum::<u32>()
+fn get_parts_list(grid: Grid<char>) -> Vec<(Part, Vec<u32>)> {
+    grid.indexed_iter()
+        .filter_map(|(location, part_type)| parse_part(location, part_type))
+        .map(|part| {
+            // Discover the matches for the part
+            let matches = discover_numbers(&part, &grid);
+            (part, matches)
         })
-        // Sum up parts for all rows
+        .collect_vec()
+}
+
+fn part_a(parts: Vec<(Part, Vec<u32>)>) -> u32 {
+    parts
+        .iter()
+        .map(|(_, matches)| matches.iter().sum::<u32>())
         .sum::<u32>()
 }
 
-fn part_b(input: &str) -> u32 {
-    // Create a grid and fill it with our input
-    let mut grid: Grid<char> = Grid::new(0, 0);
-    for l in input.lines() {
-        grid.push_row(l.chars().collect_vec());
-    }
-
-    let re: Regex = Regex::new(r"\d+").unwrap();
-    // Collect the (row, col) values of each part
-
-    grid.indexed_iter()
-        .filter_map(|(i, x)| match x {
-            // Filter out any dots or numbers, keeping all the parts
-            '*' => Some(i),
+fn part_b(parts: Vec<(Part, Vec<u32>)>) -> u32 {
+    parts
+        .iter()
+        .filter_map(|(part, matches)| match part.part_type {
+            // Find the gears
+            '*' => {
+                // A gear must have two numbers
+                if matches.len() == 2 {
+                    Some(matches.iter().product::<u32>())
+                } else {
+                    None
+                }
+            }
             _ => None,
-        })
-        .filter_map(|gear| {
-            // For the gear, calculate all it's adjacent coordinates
-            let mut adjacent_points: Vec<(usize, usize)> = vec![];
-            for row in (gear.0 - 1)..=(gear.0 + 1) {
-                for col in (gear.1 - 1)..=(gear.1 + 1) {
-                    adjacent_points.push((row, col));
-                }
-            }
-
-            let mut matches: Vec<u32> = vec![];
-
-            // For the rows around the gear, regex match on the numbers and if the range of the match contains an adjacent point to the gear, add it to a vec
-            for r in (gear.0 - 1)..=(gear.0 + 1) {
-                let row = grid.iter_row(r).collect::<String>();
-                for m in re.find_iter(&row) {
-                    let range = m.start()..m.end();
-                    for c in range {
-                        if adjacent_points.contains(&(r, c)) {
-                            matches.push(m.as_str().parse::<u32>().unwrap());
-                            // Move onto the next regex match if a gear is touching
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // If the number of matches on a gear is 2, return the gear ratio as its product
-            if matches.len() == 2 {
-                Some(matches.iter().product::<u32>())
-            } else {
-                None
-            }
-            // matches
-        })
+        }) //
         .sum::<u32>()
 }
 
 pub fn solve() -> SolutionPair {
-    // Your solution here...
+    // Build out the grid and match all the numbers to the parts
+    let grid = create_grid(include_str!("../../input/day3.txt"));
+    let parts: Vec<(Part, Vec<u32>)> = get_parts_list(grid);
+
     (
-        Solution::from(part_a(include_str!("../../input/day3.txt"))),
-        Solution::from(part_b(include_str!("../../input/day3.txt"))),
+        Solution::from(part_a(parts.clone())),
+        Solution::from(part_b(parts.clone())),
     )
 }
 
@@ -135,14 +147,22 @@ mod tests {
 ";
 
     #[test]
-    fn test_part_a() {
-        let result = part_a(TEST_INPUT);
-        assert_eq!(result, 4361);
+    fn test_day_3() {
+        let grid = create_grid(TEST_INPUT);
+        let parts: Vec<(Part, Vec<u32>)> = get_parts_list(grid);
+        assert_eq!(part_a(parts.clone()), 4361);
+        assert_eq!(part_b(parts.clone()), 467835);
     }
 
-    #[test]
-    fn test_part_b() {
-        let result = part_b(TEST_INPUT);
-        assert_eq!(result, 467835);
-    }
+    // #[test]
+    // fn test_part_a() {
+    //     let result = part_a(TEST_INPUT);
+    //     assert_eq!(result, 4361);
+    // }
+
+    // #[test]
+    // fn test_part_b() {
+    //     let result = part_b(TEST_INPUT);
+    //     assert_eq!(result, 467835);
+    // }
 }

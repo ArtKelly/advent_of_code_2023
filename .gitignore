@@ -36,6 +36,3 @@ Cargo.lock
 
 # Support for Project snippet scope
 !.vscode/*.code-snippets
-
-# Inputs are unique to users
-input/*.txt
