@@ -153,16 +153,4 @@ mod tests {
         assert_eq!(part_a(parts.clone()), 4361);
         assert_eq!(part_b(parts.clone()), 467835);
     }
-
-    // #[test]
-    // fn test_part_a() {
-    //     let result = part_a(TEST_INPUT);
-    //     assert_eq!(result, 4361);
-    // }
-
-    // #[test]
-    // fn test_part_b() {
-    //     let result = part_b(TEST_INPUT);
-    //     assert_eq!(result, 467835);
-    // }
 }
