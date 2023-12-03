@@ -1,5 +1,5 @@
 use std::fmt::{Display, Formatter, Result};
-use Solution::{I128, I16, I32, I64, I8, Isize, Str, U128, U16, U32, U64, U8, Usize};
+use Solution::{Isize, Str, Usize, I128, I16, I32, I64, I8, U128, U16, U32, U64, U8};
 
 #[derive(Clone)]
 pub enum Solution {
@@ -45,7 +45,7 @@ macro_rules! impl_from {
                 Self::$kind_(sol)
             }
         }
-    }
+    };
 }
 
 impl_from!(i8, I8);
