@@ -36,3 +36,4 @@ Cargo.lock
 
 # Support for Project snippet scope
 !.vscode/*.code-snippets
+input/*.txt
